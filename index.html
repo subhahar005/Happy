@@ -1,0 +1,342 @@
+﻿
+<!DOCTYPE html>
+<html class="no-js" lang="en-US">
+<meta http-equiv="content-type" content="text/html;charset=UTF-8">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>HAPPY - Health Awareness Platform Personalized for You</title>
+    <link rel='stylesheet' id='font-awesome-four-css' href='css/font-awesome.min.css' type='text/css' media='all' />
+    <link rel='stylesheet' href='css/style.css' type='text/css' media='all' />
+    <link rel='stylesheet' href='css/colors.css' type='text/css' media='all' />
+    <link rel='stylesheet' href='css/comments.css' type='text/css' media='all' />
+    <link rel='stylesheet' id='responsiveslides-css' href='css/responsiveslides.css' type='text/css' media='all' />
+    <link rel='stylesheet' id='reponsive-css' href='css/reponsive.css' type='text/css' media='all' />
+    <link rel='stylesheet' id='animate-custom-css' href='css/animate-custom.css' type='text/css' media='all' />
+
+    <script type="text/javascript" src="data/localapps.json"></script>
+
+    <script>
+           var server_addr = 'http://devicemanagementservice.azurewebsites.net';
+           //var server_addr = 'http://localhost:63866';
+           var approval_base_url = server_addr + '/api/Approval/';
+           var authenticate_base_url = server_addr + '/api/Authentication/';
+           var local_appslist_file = 'data/localapps.json';
+
+           function loadApps()
+           {
+               var applist = JSON.parse(localappslist);
+               //alert(applist[0].name + "  -  " + applist[0].path);
+               //alert(applist[1].name + "  -  " + applist[1].path);
+
+           }
+
+           loadApps();
+
+           function AddDeviceList() {
+               var response = "";
+
+               $.ajax({
+                   type: "GET",
+                   headers: { "Access-Control-Allow-Origin": "*" },
+                   url: approval_base_url + "GetAllApprovals",
+                   success: function (response) {
+                       console.log(response);
+
+                       var json_obj = response;
+                       var output = "<ul>";
+                       for (var i in json_obj) {
+
+                           text = '<div class="large-3 columns">' +
+                          '<ul class="pricing-table">' +
+                              '<li class="title">Standard Device</li>' +
+                              '<li class="bullet-item">Device Name: ' + json_obj[i].Name + ' </li>' +
+                              '<li class="description">Standard IoT Device</li>' +
+                              '<li class="bullet-item">Connection state: ' + json_obj[i].ConnectionState + '</li>' +
+                              '<li class="bullet-item">Device sate : ' + json_obj[i].state + '</li>' +
+                              '<li class="bullet-item">Is Approved : ' + json_obj[i].IsApprovedToUse + '</li>' +
+                              '<li class="cta-button"><a href="javascript:ApproveDevice(\''+ json_obj[i].Id +'\')" class="button" style="background-color:green">Approve</a>&nbsp;'+
+                                                     '<a href="javascript:RejectDevice(\'' + json_obj[i].Id + '\')" class="button">Reject</a></li>' +
+                          '</ul>' +
+                      '</div>';
+                           output += text;
+                       }
+                       output += "";
+
+                      // alert(output);
+                       //if (!IsLoadedWithDevices) {
+                           i = document.getElementById("devlist1");
+                           i.innerHTML = output;
+                       //}
+                   },
+                   dataType: "json"//set to JSON
+               })
+           }
+
+
+           function ApproveDevice(devId) {
+
+               alert("sending message : " + approval_base_url + "SetApproved/" + devId);
+               $.ajax({
+                   type: "GET",
+                   contentType: "application/json; charset=utf-8",
+                   url: approval_base_url + "SetApproved/" + devId,
+                   success: function (response) {
+                       var json_obj = response;
+
+                       alert("Device APPROVED!! done");
+
+                       AddDeviceList();
+                   },
+                   dataType: "json"//set to JSON
+               })
+           }
+
+
+           function RejectDevice(devId) {
+
+               alert("sending message : " + approval_base_url + "SetRejected/" + devId);
+               $.ajax({
+                   type: "GET",
+                   contentType: "application/json; charset=utf-8",
+                   url: approval_base_url + "SetRejected/" + devId,
+                   success: function (response) {
+                       var json_obj = response;
+
+                       alert("Device REJECTED!! done");
+
+                       AddDeviceList();
+                   },
+                   dataType: "json"//set to JSON
+               })
+           }
+
+           function EnrollDevice() {
+
+               var reqParams = "Id=" + document.getElementById("txt_Id").value + "&Name=" + document.getElementById("txt_Name").value
+                                     + "&MakeId=" + document.getElementById("txt_MakeId").value + "&state=" + document.getElementById("txt_State").value;
+
+               alert("sending message : " + authenticate_base_url + "EnrollDevice?" + reqParams);
+               $.ajax({
+                   type: "GET",
+                   contentType: "application/json; charset=utf-8",
+                   url: authenticate_base_url + "EnrollDevice?" + reqParams,
+                   success: function (response) {
+                       var json_obj = response;
+                       displayText = " ID : " + response.Id + "..requested for enroll.."
+                       alert("done !" + displayText);
+
+                   },
+                   dataType: "json"//set to JSON
+               })
+           }
+
+           function EnrollDevicePost() {
+               var txtMakeId = document.getElementById("txt_MakeId").value;
+               var txtId = document.getElementById("txt_Id").value;
+               var txtName = document.getElementById("txt_Name").value;
+
+               var reqData = {
+                   "IsApprovedToUse": "false",
+                   "MakeId": txtMakeId,
+                   "Id": txtId,
+                   "Name": txtName,
+                   "PrimaryKey": "",
+                   "SecondaryKey": "",
+                   "ConnectionString": "",
+                   "State": ""
+               }
+
+               alert(reqData);
+               alert("sending message : " + authenticate_base_url + "RegisterDevice");
+               $.ajax({
+                   type: "POST",
+                   contentType: "application/json",
+                   url: authenticate_base_url + "RegisterDevice",
+                   data:JSON.stringify(reqData),
+                   success: function (response) {
+                       var json_obj = response;
+                       displayText = " ID : " + response.Id + "..requested for enroll.."
+                       alert("done !" + displayText);
+
+                   },
+                   dataType: "json"//set to JSON
+               })
+           }
+       </script>
+</head>
+<body style="background-image:url('images/bkg.png')" onload="javascript:AddDeviceList();">
+<nav class="vertical-menu close on-hover-show">
+    <a class="showMenu"><i class="remove back"></i></a>
+    <h3 class="text-center">
+        <a href="index.html">Search Device</a>
+    </h3>
+    <form id='search' class="searchform" action="" role="search" method='get' accept-charset="UTF-8">
+        <div class="container-inline">
+            <div class="form-item form-type-textfield form-item-search-block-form">
+                <label class="element-invisible" for="edit-search-block-form--2">Search Text</label>
+                <input title="Enter the terms you wish to search for." class="small-8 columns form-text" type="text" id="edit-search-block-form--2" name="s" value="" size="15" maxlength="128" />
+            </div>
+            <button class="postfix small-4 columns form-submit" id="edit-submit--2" name="op" value="Search" type="submit">Search</button>
+            <input type="radio" id="radio1" name="radio"><label for="radio1">Name</label>
+            <input type="radio" id="radio2" name="radio" checked="checked"><label for="radio2">Status</label>
+            <input type="radio" id="radio3" name="radio"><label for="radio3">Text</label>
+
+        </div>
+    </form>
+    <br/>
+    <br/>
+    <div class="menu-menu-1-container">
+        <ul id="menu-menu-1" class="menu-list">
+
+        </ul>
+    </div>
+</nav>
+
+<div id="spaces-main" class="pt-perspective">
+    <section class="page-section home-page">
+        <div class="row metro-panel">
+            <div class="large-12 columns">
+                <div class="row menu-row">
+                    <div class="large-8 columns">
+                        <h1 class="site-name">
+                            <a href="index.html">Be Healthy, Be HAPPY</a>
+                        </h1>
+                    </div>
+                    <div class="large-4 columns menu-button text-right">
+                        <a class="showMenu"><i class="fa-bars fa icon-x back"></i></a>
+                        <a class="showMenu search"><i class="fa-search fa icon-x back"></i></a>
+                    </div>
+                </div>
+                <div class="row">
+                    <div id="before-tiles" class="large-12 columns">
+                    </div>
+                    <div class="four large-4 columns">
+                        <div class="row">
+                            <div class='twelve small-12 columns twitter-feed-box space'>
+                                <div class='color-8'>
+                                    <span class='box-title'><i class='fa-star fa '></i> &nbsp;Vital Info</span>
+                                    <div class='wd-tweets'>
+                                        <ul>
+                                            <li>More than 1 million new cancer patients add every year..</li>
+                                            <li>Cancer is curable..</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class='six small-6 columns contact-box space'>
+                                <div class='color-7'>
+                                    <a href='http://chemicalsearch.azurewebsites.net/chemsearch.aspx'>
+                                        <span class='box-title'>Chemical Search</span>
+                                        <br/>
+                                     <span class="fa-stack fa-lg">
+                                         <i class="fa fa-flask fa fa-3x fa-stack-1x"></i>
+                                         <i class="fa fa-search fa fa-3x fa-stack-2x text-danger" style="color:grey;"></i>
+                                     </span>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class='six small-6 columns contact-box space'>
+                                <div class='color-1'>
+                                    <a href='#'>
+                                        <span class='box-title'>Banned Drugs</span>
+                                        <br/>
+                                     <span class="fa-stack fa-lg">
+                                         <i class="fa fa-medkit fa fa-3x fa-stack-1x"></i>
+                                         <i class="fa fa-ban fa fa-3x fa-stack-2x text-danger" style="color:red;"></i>
+                                     </span>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class='twelve small-12 columns twitter-feed-box space'>
+                                <div class='color-8'>
+                                    <span class='box-title'><i class='fa-medkit fa '></i> &nbsp;Health Info</span>
+                                    <div>
+                                        <ul class="testimonials">
+                                            <li>
+                                                <p style="font-size:20px"> <i class='fa-heart fa ' style="color:lightgreen"></i> &nbsp; Drink minimum 3 litres of water daily..</p>
+                                            </li>
+                                            <li>
+                                                <p style="font-size:20px"> <i class='fa-heart fa ' style="color:red"></i> &nbsp; Walk / jog daily for 30 mins..</p>
+                                            </li>
+                                            <li>
+                                                <p style="font-size:20px"> <i class='fa-heart fa '></i> &nbsp; Dont eat packaged food.. eat homemade food..</p>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="four large-4 columns">
+                        <div class="row">
+                            <div class='six small-6 columns contact-box space'>
+                                <div class='color-5'>
+                                    <a href='index.html'>
+                                        <span class='box-title'>&nbsp;&nbsp;&nbsp;Check HAQ</span>
+                                        <br/>
+                                        <i class='fa-graduation-cap fa fa-4x'></i>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class='six small-6 columns contact-box space'>
+                                <div class='color-6'>
+                                    <a href='index.html'>
+                                        <span class='box-title'>Locate Doctor</span>
+                                        <br/>
+                                        <i class='fa-map-marker fa fa-4x'></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+
+
+                    <div id="after-tiles" class="large-12 columns">
+                    </div>
+                </div>
+                <div class="copyright">© 2016  All rights reserved.</div>
+            </div>
+        </div>
+    </section>
+
+
+    <section class="page-section About-page page-section-60">
+        <div class="row menu-row">
+            <div class="large-1 go-back">
+                <i class="fa-arrow-left fa icon-x back" onclick="window.history.back()"></i>
+            </div>
+            <div class="large-7 columns p-l-0">
+                <h2>About</h2>
+            </div>
+            <div class="large-4 columns menu-button text-right">
+                <a class="showMenu" href="index.html#home"><i class="fa-home fa icon-x back"></i></a>
+                <a class="showMenu"><i class="fa-bars fa icon-x back"></i></a>
+                <a class="showMenu"><i class="fa-search fa icon-x back"></i></a>
+            </div>
+        </div>
+    </section>
+
+
+</div>
+
+<script type='text/javascript' src='js/jquery/jquery.js'></script>
+<script type='text/javascript' src='js/jquery/jquery-migrate.min.js'></script>
+<script type='text/javascript' src='js/comment-reply.min.js'></script>
+<script type='text/javascript' src='js/vendor/custom.modernizr.js'></script>
+<script type='text/javascript' src='js/foundation.min.js'></script>
+<script type='text/javascript' src='js/modernizr.custom.js'></script>
+<script type='text/javascript' src='js/foundation/foundation.section.js'></script>
+<script type='text/javascript' src='js/responsiveslides.js'></script>
+<script type='text/javascript' src='js/scripts.js'></script>
+<!-- jQuery library -->
+<script src="js/jquery.min.js"></script>
+
+<script type='text/javascript' src='js/wd-ajax-load/js/load-posts.js'></script>
+<script type='text/javascript' src='js/jquery.form.min.js'></script>
+<script type="text/javascript" src="cordova.js"></script>
+<script type="text/javascript" src="js/index.js"></script>
+</body>
+</html>
